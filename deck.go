@@ -52,6 +52,25 @@ func (d *Deck) remove(index int) Card {
 	return card
 }
 
+func (d *Deck) removeMany(indices []int) Deck {
+	indexSet := make(map[int]bool)
+	for _, i := range indices {
+		indexSet[i] = true
+	}
+
+	tempDeck := []Card{}
+	removed := []Card{}
+	for i, card := range *d {
+		if indexSet[i] {
+			removed = append(removed, card)
+		} else {
+			tempDeck = append(tempDeck, card)
+		}
+	}
+	(*d) = tempDeck
+	return removed
+}
+
 func (d *Deck) Sort() {
 	sort.Slice((*d), func(i, j int) bool {
 		return (*d)[i].Value > (*d)[j].Value
