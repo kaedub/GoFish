@@ -11,6 +11,7 @@ func GetInputFromUser(prompt string, reader *bufio.Reader) string {
 	input, err := reader.ReadString('\n')
 	if err != nil {
 		fmt.Println("Error", err)
+		return GetInputFromUser(prompt, reader)
 	}
 	return strings.Trim(input, " \r\n")
 }

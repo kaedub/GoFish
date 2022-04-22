@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -23,6 +25,15 @@ func newDeck() Deck {
 		}
 	}
 	return deck
+}
+
+func (d Deck) String() string {
+	var deck strings.Builder
+	for _, card := range d {
+		s := fmt.Sprintf("%v\n", card.String())
+		deck.WriteString(s)
+	}
+	return deck.String()
 }
 
 func (d Deck) shuffle() {

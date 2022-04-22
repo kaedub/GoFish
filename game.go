@@ -6,67 +6,100 @@ import (
 )
 
 type Game struct {
-	Player   Player
-	Opponent Player
-	Deck     Deck
+	Player Player
+	Bot    Player
+	Deck   Deck
 }
-
-var getInput = GetInputFromUser
 
 func newGame(reader *bufio.Reader) Game {
 	name := GetInputFromUser("Enter your name:", reader)
 	return Game{
-		Player:   newPlayer(name, false),
-		Opponent: newPlayer("CPU", true),
-		Deck:     newDeck(),
+		Player: newPlayer(name),
+		Bot:    newPlayer("CPU"),
+		Deck:   newDeck(),
 	}
 }
 
 func (g Game) start(reader *bufio.Reader) {
+	initHandSize := 7
 	g.Deck.shuffle()
-	g.deal()
+	g.deal(initHandSize)
 
-	gameOver := false
-	activePlayer := &g.Player
-	inactivePlayer := &g.Opponent
-	turn := 1
-	for gameOver == false {
-		fmt.Println()
-		fmt.Printf("===============  TURN %v ==================\n", turn)
-		fmt.Printf("It is %v's turn \n", activePlayer.Name)
+	var gameOver = false
+	turnCount := 1
+	for !gameOver {
+		// player turn
+		g.turn(reader, false, turnCount)
+		turnCount++
 
-		cardValue := activePlayer.fish(reader)
-		fmt.Printf("%v: Do you have have any %vs?\n", activePlayer.Name, StringToFullString(cardValue))
-		card, success := inactivePlayer.respond(cardValue)
-		if success {
-			fmt.Printf("%v gives up card %v\n", inactivePlayer.Name, card.String())
-			(*activePlayer).Hand = append(activePlayer.Hand, card)
-		} else {
-			fmt.Printf("%v: Go Fish!\n", inactivePlayer.Name)
-			(*activePlayer).Hand = append(activePlayer.Hand, g.Deck.draw())
+		// bot turn
+		g.turn(reader, true, turnCount)
+		turnCount++
+
+		if turnCount > 20 {
+			gameOver = true
 		}
-
-		g.Player.Hand.Sort()
-		g.Opponent.Hand.Sort()
-
-		fmt.Println()
-		fmt.Println(g.Player.showHand())
-
-		GetInputFromUser("[Enter] to end turn", reader)
-
-		tmp := inactivePlayer
-		inactivePlayer = activePlayer
-		activePlayer = tmp
-		turn++
 	}
 }
 
-func (g *Game) deal() {
-	for i := 0; i < 7; i++ {
-		g.Player.Hand = append(g.Player.Hand, g.Deck.draw())
-		g.Opponent.Hand = append(g.Opponent.Hand, g.Deck.draw())
+func (g *Game) deal(handSize int) {
+	cardsToDeal := handSize
+	for ; cardsToDeal > 0; cardsToDeal-- {
+		g.Player.addToHand(g.Deck.draw())
+		g.Bot.addToHand(g.Deck.draw())
 	}
 	g.Player.Hand.Sort()
-	g.Opponent.Hand.Sort()
-	fmt.Println(g.Player.showHand())
+	g.Bot.Hand.Sort()
+	fmt.Println(g.Player.Hand.String())
+}
+
+func (g *Game) turn(reader *bufio.Reader, bot bool, turnCount int) {
+	requesting := &g.Player
+	responding := &g.Bot
+	if bot {
+		requesting = &g.Bot
+		responding = &g.Player
+	}
+
+	fmt.Println()
+	fmt.Printf("===============  TURN %v ==================\n", turnCount)
+	fmt.Printf("It is %v's turn \n", requesting.Name)
+
+	var cardValue string
+	if bot {
+		cardValue = requesting.botSeek()
+	} else {
+		cardValue = requesting.userSeek(reader)
+	}
+
+	fmt.Printf("%v: Do you have have any %vs?\n", requesting.Name, StringToFullString(cardValue))
+	card, success := responding.respond(cardValue)
+
+	if success {
+		fmt.Printf("%v gives up card %v\n", responding.Name, card.String())
+		requesting.addToHand(card)
+	} else {
+		fmt.Printf("%v: Go Fish!\n", responding.Name)
+		drawn := g.Deck.draw()
+		if !bot {
+			fmt.Printf("You drew a %v\n", drawn.String())
+		}
+		requesting.addToHand(drawn)
+	}
+
+	g.Player.setBooks()
+	g.Bot.setBooks()
+	fmt.Printf("Player books:\n%v\n", g.Player.Books.String())
+	fmt.Printf("Player score: %v\n", g.Player.getScore())
+	fmt.Printf("Bot books:\n%v\n", g.Bot.Books.String())
+	fmt.Printf("Bot score %v\n", g.Bot.getScore())
+
+	g.Player.Hand.Sort()
+	g.Bot.Hand.Sort()
+
+	fmt.Println()
+	fmt.Println("Your Hand")
+	fmt.Println(g.Player.Hand.String())
+
+	g.Player.endTurn(reader)
 }
