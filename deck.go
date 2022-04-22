@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"sort"
+	"time"
 )
 
 type Deck []Card
@@ -25,15 +25,8 @@ func newDeck() Deck {
 	return deck
 }
 
-func (d Deck) print() {
-	for _, card := range d {
-		fmt.Println(card.String())
-	}
-}
-
 func (d Deck) shuffle() {
-	// rand.Seed(time.Now().UnixNano())
-	rand.Seed(22)
+	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(d), func(i, j int) {
 		d[i], d[j] = d[j], d[i]
 	})
@@ -75,4 +68,24 @@ func (d *Deck) Sort() {
 	sort.Slice((*d), func(i, j int) bool {
 		return (*d)[i].Value > (*d)[j].Value
 	})
+}
+
+func (d *Deck) removeMatches(minimumMatchCount int) Deck {
+	m := make(map[string][]int)
+	for i, card := range *d {
+		if _, ok := m[card.ValueToString()]; !ok {
+			m[card.ValueToString()] = []int{i}
+		} else {
+			m[card.ValueToString()] = append(m[card.ValueToString()], i)
+		}
+	}
+
+	indicesToRemove := []int{}
+	for _, v := range m {
+		if len(v) >= minimumMatchCount {
+			indicesToRemove = append(indicesToRemove, v...)
+		}
+	}
+
+	return d.removeMany(indicesToRemove)
 }
