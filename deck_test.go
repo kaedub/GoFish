@@ -73,4 +73,24 @@ func TestDeck(t *testing.T) {
 			t.Errorf("deck.sort did not sort from highest to lowest")
 		}
 	}
+
+	// assert that matching cards can be removed from the deck
+	deck = Deck{
+		Card{Value: 5, Suit: "hearts"},
+		Card{Value: 5, Suit: "diamonds"},
+		Card{Value: 5, Suit: "clubs"},
+		Card{Value: 5, Suit: "spades"},
+		Card{Value: 6, Suit: "hearts"},
+		Card{Value: 6, Suit: "diamonds"},
+		Card{Value: 6, Suit: "spades"},
+		Card{Value: 7, Suit: "hearts"},
+		Card{Value: 7, Suit: "diamonds"},
+	}
+	matches := deck.removeMatches(3)
+	if len(matches) != 7 {
+		t.Errorf("deck.removeMatches did not return the correct number of cards:\nexpected -> %v\nreceived -> %v", 7, len(matches))
+	}
+	if len(deck) != 2 {
+		t.Errorf("deck.removeMatches did not remove the correct number of cards:\nexpected -> %v\nreceived -> %v", 7, len(matches))
+	}
 }
